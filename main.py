@@ -3,16 +3,16 @@ import make_env
 import numpy as np
 from RL_brain import DeepQNetwork
 import pickle
-import tensorflow as tf
+import matplotlib.pyplot as plt
 
 # Constant variables Reference: https://github.com/AI4Finance-Foundation/ElegantRL/blob/master/elegantrl/train/config.py
-MAX_EPISODE = 100
+MAX_EPISODE = 200
 MAX_STEP = 200
-LR_RATE = 0.0001            # roughly 1e-4 ~ 5e-5
-REWARD_DECAY = 0.99         # 1/(1-gamma) = steps (which is the expected steps to consider)
+LR_RATE = 0.00005            # roughly 1e-4 ~ 5e-5
+REWARD_DECAY = 0.95         # 1/(1-gamma) = steps (which is the expected steps to consider)
 E_GREEDY = 0.9
 REPLACE_TAR_ITER = 200
-MEMORY_SIZE = 2**12         # Bigger the better
+MEMORY_SIZE = 2**16         # Bigger the better
 E_GREEDY_INCRE = 0.0
 BATCH_SIZE = 32             # 2*dim_net = 2*16
 
@@ -28,22 +28,18 @@ obs = env.reset()
 env.discrete_action_input = True
 
 # Establish the individual agent brain (i.e. Q-network)
-Q_network = []
-for i, agent in enumerate(env.agents):
-    Q_network.append(
-        DeepQNetwork(
-            env.action_space[i].n, env.observation_space[i].shape[0]-4, # Since communication has no effect
-            learning_rate=LR_RATE,
-            reward_decay=REWARD_DECAY,
-            e_greedy=E_GREEDY,
-            replace_target_iter=REPLACE_TAR_ITER,
-            memory_size=MEMORY_SIZE,
-            e_greedy_increment=E_GREEDY_INCRE,
-            batch_size=BATCH_SIZE,
-            index=i
-            # output_graph=True
-        )
-    )
+Q_network = DeepQNetwork(
+    env.action_space[0].n, env.observation_space[0].shape[0]-4, # Since communication has no effect
+    learning_rate=LR_RATE,
+    reward_decay=REWARD_DECAY,
+    e_greedy=E_GREEDY,
+    replace_target_iter=REPLACE_TAR_ITER,
+    memory_size=MEMORY_SIZE,
+    e_greedy_increment=E_GREEDY_INCRE,
+    batch_size=BATCH_SIZE,
+    # output_graph=True
+)
+
 
 # Tryout for best parameters
 iter_index = 0
@@ -60,16 +56,16 @@ while iter_index < 1:
 
     # Adjust parameters
     for i, agent in enumerate(env.agents):
-        Q_network[i].lr = LR_RATE
-        Q_network[i].replace_target_iter = REPLACE_TAR_ITER
-        Q_network[i].batch_size = BATCH_SIZE
-        Q_network[i].init_op()
+        Q_network.lr = LR_RATE
+        Q_network.replace_target_iter = REPLACE_TAR_ITER
+        Q_network.batch_size = BATCH_SIZE
+        Q_network.init_op()
 
     # Train agents
     time.sleep(1)
     return_list = []    # Used to record the experimental return procedure
     for episode in range(MAX_EPISODE):
-        # Initial observi]ation
+        # Initial observation
         observation = env.reset()
         # Delete the last four observations since it is the communication and has no effect
         for i, agent in enumerate(env.agents):
@@ -86,22 +82,23 @@ while iter_index < 1:
             # RL choose actions based on observations
             actions = []
             for i, agent in enumerate(env.agents):
-                action = Q_network[i].choose_action(observation[i])
+                action = Q_network.choose_action(observation[i])
                 actions.append(action)
 
             # Take action and get next observation and reward
             observation_n, reward_n, done_n, info_n = env.step(actions)
             for i, agent in enumerate(env.agents):
                 observation_n[i] = observation_n[i][:-4]
-            # Calculate experiment accumulated reward
+            # Calculate experiment accumulated reward. Note that reward_n is a vector with three same reward due to the
+            # collaborative setting.
             exp_return += pow(REWARD_DECAY, step)*reward_n[0]
 
             # Store transition and train the agents
             for i, agent in enumerate(env.agents):
-                Q_network[i].store_transition(observation[i], actions[i], reward_n[i], observation_n[i])
+                Q_network.store_transition(observation[i], actions[i], reward_n[i], observation_n[i])
 
                 if (episode != 0 or step > 32) and step % 5 == 0:
-                    Q_network[i].learn()
+                    Q_network.learn()
 
             # Swap observation
             observation = observation_n
@@ -113,17 +110,19 @@ while iter_index < 1:
             step += 1
         print("At episode " + str(episode) + ", the experiment return is: " + str(exp_return))
         return_list.append(exp_return)
-    recorded_return_dict["lr: " + str(LR_RATE) +
-                         " replace target: " + str(REPLACE_TAR_ITER) +
-                         " batch size: " + str(BATCH_SIZE)] = return_list
+    # recorded_return_dict["lr: " + str(LR_RATE) +
+    #                      " replace target: " + str(REPLACE_TAR_ITER) +
+    #                      " batch size: " + str(BATCH_SIZE)] = return_list
     iter_index += 1
 
 # Save the recorded experiment results
-result_file = open('record.pickle', 'wb')
-pickle.dump(recorded_return_dict, result_file)
+# result_file = open('record.pickle', 'wb')
+# pickle.dump(recorded_return_dict, result_file)
 
 
 # End of game
+plt.plot(return_list)
+plt.show()
 print("Training over")
 env.close()
 
