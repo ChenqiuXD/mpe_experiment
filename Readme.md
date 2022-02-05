@@ -1,7 +1,10 @@
 # MARL methods in mpe environment
 This is a record for my learning process during Multi-Agent Reinforcement Learning algorithms. 
 
-## Instructions
+## Instructions  
+Download the multiagent-particle-environment from github and open a terminal then `cd` into the root directory (where setup.py exists). Then use command  
+>python setup.py install  
+to install the mpe environment.  
 
 ## References
 mpe environment :
