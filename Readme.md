@@ -15,14 +15,14 @@ Download the multiagent-particle-environment from github and open a terminal the
 
 
 ## References
--[1] mpe environment :
+- [1] mpe environment :
 > https://github.com/openai/multiagent-particle-envs  
 
--[2] To fix 'prng' lost problem  
+- [2] To fix 'prng' lost problem  
 > https://github.com/openai/multiagent-particle-envs/issues/53  
 
--[3] a great example repo:
+- [3] a great example repo:
 > https://github.com/AI4Finance-Foundation/ElegantRL
  
--[4] Morphan's example (for single agent rl)
+- [4] Morphan's example (for single agent rl)
 > https://github.com/MorvanZhou/Reinforcement-learning-with-tensorflow
